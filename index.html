@@ -1112,7 +1112,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/Renare/assets/index-DR8_KmAH.js"></script>
+  <script type="module" crossorigin src="/Renare/assets/index-JcMVcQC5.js"></script>
 </head>
 
 <body>
@@ -1479,8 +1479,8 @@
       }, "-=0.3");
     };
     
-    // Fallback: If 3D script fails or is slow, start intro anyway after 2s
-    setTimeout(() => { if(introScreen.style.display !== 'none') window.startIntro(); }, 2000);
+    // Fallback: If 3D script fails or warmup takes too long, fire after 3.5s
+    setTimeout(() => { if(introScreen.style.display !== 'none') window.startIntro(); }, 3500);
 
     /* ── CUSTOM CURSOR ── */
     const dot = document.getElementById('cursor-dot');
