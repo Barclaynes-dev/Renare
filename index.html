@@ -85,6 +85,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: hidden;        /* clips letters during upward slide — prevents cutout glitch */
       will-change: transform;
     }
 
@@ -1112,7 +1113,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/Renare/assets/index-JcMVcQC5.js"></script>
+  <script type="module" crossorigin src="/Renare/assets/index-CDLDodzc.js"></script>
 </head>
 
 <body>
@@ -1431,56 +1432,63 @@
   <!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script>
-    /* ── INTRO ANIMATION ── */
-    const introScreen = document.getElementById('intro-screen');
-    const introChars = document.querySelectorAll('.intro-char');
-    
-    // Force GPU acceleration to ensure silky smoothness and prevent layout thrashing
-    gsap.set(introChars, { force3D: true });
+    /* ── INTRO ANIMATION ──
+       Fires immediately on its own — completely independent of WebGL/Three.js.
+       Three.js will compile its shaders silently in the background while this plays.
+       This is what guarantees zero lag: the GPU and intro animation never compete.
+    */
+    const introScreen  = document.getElementById('intro-screen');
+    const introChars   = document.querySelectorAll('.intro-char');
+    const introLogo    = document.querySelector('.intro-logo');
+
+    // Promote to GPU composite layer immediately
+    gsap.set(introChars, { force3D: true, y: 30, opacity: 0 });
     gsap.set(introScreen, { force3D: true });
 
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
-    }
-    
-    window.startIntro = function() {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    (function runIntro() {
       const tl = gsap.timeline({
-        onComplete: () => {
+        onComplete() {
           document.body.style.overflowY = 'auto';
-          introScreen.style.display = 'none';
+          // Hide without display:none to avoid layout flash — it's already off-screen
+          introScreen.style.visibility  = 'hidden';
+          introScreen.style.pointerEvents = 'none';
           setTimeout(() => window.scrollTo(0, 0), 10);
         }
       });
 
+      // 1. Letters rise in, staggered
       tl.to(introChars, {
-        opacity: 1,
-        y: 0,
-        duration: 1.0,
-        stagger: 0.08,
-        ease: "expo.out",
-        delay: 0.1
+        opacity:  1,
+        y:        0,
+        duration: 0.9,
+        stagger:  0.07,
+        ease:     'expo.out',
+        delay:    0.2
       })
-      .to('.intro-logo', {
-        scale: 1.08, // Using scale instead of 'gap' to prevent severe layout thrashing/lag
-        duration: 1.8,
-        ease: "sine.inOut"
-      }, "-=1.0")
+      // 2. Logo breathes — scale instead of gap to avoid layout thrash
+      .to(introLogo, {
+        scale:    1.06,
+        duration: 1.6,
+        ease:     'sine.inOut'
+      }, '-=0.8')
+      // 3. Letters exit upward — starts AFTER a beat so user reads the logo
       .to(introChars, {
-        opacity: 0,
-        y: -30,
-        duration: 0.5,
-        stagger: 0.04,
-        ease: "power3.in"
-      }, "+=0.1")
+        opacity:  0,
+        y:        -40,
+        duration: 0.45,
+        stagger:  0.035,
+        ease:     'power3.in'
+      }, '+=0.35')
+      // 4. Whole screen slides up — starts while last letters are still going
       .to(introScreen, {
         yPercent: -100,
-        duration: 1.0,
-        ease: "expo.inOut"
-      }, "-=0.3");
-    };
-    
-    // Fallback: If 3D script fails or warmup takes too long, fire after 3.5s
-    setTimeout(() => { if(introScreen.style.display !== 'none') window.startIntro(); }, 3500);
+        duration: 0.85,
+        ease:     'expo.inOut'
+      }, '-=0.15');
+    })();
+
 
     /* ── CUSTOM CURSOR ── */
     const dot = document.getElementById('cursor-dot');
